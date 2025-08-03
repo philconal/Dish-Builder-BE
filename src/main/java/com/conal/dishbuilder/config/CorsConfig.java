@@ -14,7 +14,7 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(org.springframework.web.servlet.config.annotation.CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("https://dish-builder-be.onrender.com") // Adjust the origin as needed
+                        .allowedOrigins("https://dishbuilder.netlify.app/","http://localhost:5173/") // Adjust the origin as needed
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true);
