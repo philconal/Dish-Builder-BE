@@ -3,7 +3,7 @@ FROM openjdk:21-jdk as builder
 WORKDIR /app
 COPY . .
 RUN chmod +x mvnw
-RUN ./mvnw clean compile -DskipTests
+RUN ./mvnw clean package -DskipTests
 
 FROM openjdk:21-jdk
 WORKDIR /app
