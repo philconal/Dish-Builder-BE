@@ -7,5 +7,6 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface TenantMapper {
+    @Mapping(source = "urlSlug", target = "urlSlug")
     TenantEntity toEntity(CreateTenantRequest request);
 }
