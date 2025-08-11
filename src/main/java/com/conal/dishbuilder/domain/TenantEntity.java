@@ -14,6 +14,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Getter
 @Setter
+@Builder
 public class TenantEntity extends Auditable<UUID> implements Serializable {
 
     @Id

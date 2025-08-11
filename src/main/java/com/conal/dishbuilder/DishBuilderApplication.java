@@ -20,7 +20,7 @@ private final Environment environment;
 
 	@PostConstruct
 	public void init(){
-		String property = environment.getProperty("spring.jpa.hibernate.ddl-auto");
+		String property = environment.getProperty("spring.flyway.baseline-on-migrate");
 		log.error("Property: {}", property);
 	}
 
