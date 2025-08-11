@@ -2,8 +2,8 @@ spring:
   application:
     name: dish-builder-app
   config:
-    import: ${CONFIG_URL}
+    import: configserver:https://dish-builder-cloud-config.onrender.com
   cloud:
     config:
-      profile: ${PROFILE}
-      label: ${LABEL}
+      profile: dev
+      label: master
