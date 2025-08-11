@@ -13,6 +13,8 @@ public class UserController {
     //test only
     @GetMapping("/user")
     public Map<String, Object> user(@AuthenticationPrincipal OAuth2User principal) {
+
+
         return principal.getAttributes(); // Trả về thông tin người dùng từ Google
     }
 }

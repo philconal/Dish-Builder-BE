@@ -1,27 +1,52 @@
 package com.conal.dishbuilder.domain;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import lombok.Data;
+import jakarta.persistence.*;
+import lombok.*;
 
+import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
-@Data
-public class TenantEntity {
+@Table(name = "tenant", schema = "dish_builder_schema")
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
+public class TenantEntity extends Auditable<UUID> implements Serializable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue
     private UUID id;
-    private String name;
-    private String phone;
-    private String email;
-    private String address;
-    private String urlSlug;
-    private String logoUrl;
-    private String subDomain;
-    private UUID themeId;
 
+    @Column(length = 100, nullable = false)
+    private String name;
+
+    @Column(length = 15, nullable = false)
+    private String phone;
+
+    @Column(length = 150, nullable = false)
+    private String email;
+
+    @Column(length = 255)
+    private String address;
+
+    @Column(name = "url_slug", length = 255, nullable = false)
+    private String urlSlug;
+
+    @Column(name = "logo_url", length = 255)
+    private String logoUrl;
+
+    @Column(name = "sub_domain", length = 255)
+    private String subDomain;
+
+    @OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL)
+    private Set<TenantCustomizationEntity> customizations;
+
+    @OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL)
+    private Set<UserEntity> users;
+
+    @OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL)
+    private Set<RoleEntity> roles;
 }
