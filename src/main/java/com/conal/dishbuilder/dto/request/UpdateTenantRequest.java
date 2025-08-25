@@ -1,13 +1,20 @@
 package com.conal.dishbuilder.dto.request;
 
+import com.conal.dishbuilder.constant.CommonStatus;
+import jakarta.annotation.Nonnull;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.Builder;
 import lombok.Data;
+
+import java.util.UUID;
 
 @Data
 public class UpdateTenantRequest {
+    @Nonnull
+    private UUID id;
 
     @NotBlank(message = "Name is required")
     @Size(max = 100, message = "Name must not exceed 100 characters")
@@ -27,4 +34,20 @@ public class UpdateTenantRequest {
 
     @Size(max = 255, message = "Logo URL must not exceed 255 characters")
     private String logoUrl;
+
+    @NotBlank
+    private CommonStatus status;
+
+    @Data
+    public static class LoginRequest {
+        private String username;
+        private String password;
+    }
+
+    @Data
+    @Builder
+    public static class LoginResponse {
+        private String accessToken;
+        private String refreshToken;
+    }
 }

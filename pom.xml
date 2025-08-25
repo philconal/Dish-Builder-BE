@@ -234,6 +234,27 @@
 				</configuration>
 			</plugin>
 
+			<!-- Build Helper Plugin to include generated sources -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>3.5.0</version>
+				<executions>
+					<execution>
+						<id>add-source</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>add-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<source>${project.build.directory}/generated-sources/annotations</source>
+							</sources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
 			<!-- Spring Boot Maven Plugin (build executable JAR/WAR) -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
@@ -254,8 +275,8 @@
 				<artifactId>flyway-maven-plugin</artifactId>
 				<version>11.7.2</version>
 				<configuration>
-					<url>jdbc:postgresql://localhost:5432/dish-builder-db</url>
-					<user>dishbuilder</user>
+					<url>jdbc:postgresql://localhost:5432/dish_builder_db</url>
+					<user>dish-builder</user>
 					<password>Conal2411@C</password>
 					<schemas>
 						<schema>dish_builder_schema</schema>

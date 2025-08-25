@@ -31,13 +31,11 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ✅ cấu hình CORS ở đây
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/v1.0/tenant/register",
                                 "/v3/api-docs/**",          // Added /** to cover all OpenAPI JSON endpoints
                                 "/swagger-ui/**",
-                                "/api/v1/auth/**",
-                                "/api/v1/**"
-                        ).permitAll()
-                        .anyRequest().authenticated())
+                                "/v1.0/auth/**",
+                                "/v1.0/**"
+                        ).permitAll())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);

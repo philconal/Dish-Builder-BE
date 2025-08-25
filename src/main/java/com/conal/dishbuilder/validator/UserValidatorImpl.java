@@ -2,9 +2,11 @@ package com.conal.dishbuilder.validator;
 
 import com.conal.dishbuilder.domain.TenantEntity;
 import com.conal.dishbuilder.dto.request.CreateTenantRequest;
+import com.conal.dishbuilder.dto.request.RegisterUserRequest;
 import com.conal.dishbuilder.dto.request.UpdateTenantRequest;
 import com.conal.dishbuilder.dto.response.FieldErrorResponse;
 import com.conal.dishbuilder.repository.TenantRepository;
+import com.conal.dishbuilder.repository.UserRepository;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
@@ -16,46 +18,33 @@ import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
-public class TenantValidatorImpl implements TenantValidator {
+public class UserValidatorImpl implements UserValidator {
     private final Validator validator;
+    private final UserRepository userRepository;
     private final TenantRepository tenantRepository;
 
     @Override
-    public List<FieldErrorResponse> validateCreateTenant(CreateTenantRequest request) {
+    public List<FieldErrorResponse> validateCreateAccount(RegisterUserRequest request) {
         List<FieldErrorResponse> fieldErrors = new ArrayList<>();
         Set<ConstraintViolation<Object>> violations = validator.validate(request);
         if (!violations.isEmpty()) {
             fieldErrors.addAll(violations.stream()
                     .map(this::buildFieldErrorResponse).toList());
         }
-        if (tenantRepository.existsByUrlSlug(request.getUrlSlug())) {
-            fieldErrors.add(buildFieldErrorResponse("urlSlug", request.getUrlSlug(), "Url Slug already exists."));
+        if(!tenantRepository.existsById(request.getTenantId())){
+            fieldErrors.add(buildFieldErrorResponse("tenantId", request.getTenantId().toString(), "TenantId not found."));
         }
-        if (tenantRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByUsernameAndTenantId(request.getUsername().trim(), request.getTenantId())) {
+            fieldErrors.add(buildFieldErrorResponse("username", request.getUsername(), "Username already exists."));
+        }
+        if (userRepository.existsByEmailAndTenantId(request.getEmail().trim(), request.getTenantId())) {
             fieldErrors.add(buildFieldErrorResponse("email", request.getEmail(), "Email already exists."));
         }
-        if (tenantRepository.existsByName(request.getName())) {
-            fieldErrors.add(buildFieldErrorResponse("name", request.getName(), "Name already exists."));
-        }
+
         return fieldErrors;
     }
 
-    @Override
-    public List<FieldErrorResponse> validateUpdateTenant(UpdateTenantRequest request, TenantEntity tenantEntity) {
-        List<FieldErrorResponse> fieldErrors = new ArrayList<>();
-        Set<ConstraintViolation<Object>> violations = validator.validate(request);
-        if (!violations.isEmpty()) {
-            fieldErrors.addAll(violations.stream()
-                    .map(this::buildFieldErrorResponse).toList());
-        }
-        if (!tenantEntity.getEmail().equals(request.getEmail()) && tenantRepository.existsByEmail(request.getEmail())) {
-            fieldErrors.add(buildFieldErrorResponse("email", request.getEmail(), "Email already exists."));
-        }
-        if (!tenantEntity.getName().equals(request.getName()) && tenantRepository.existsByName(request.getName())) {
-            fieldErrors.add(buildFieldErrorResponse("name", request.getName(), "Name already exists."));
-        }
-        return fieldErrors;
-    }
+
 
     private FieldErrorResponse buildFieldErrorResponse(ConstraintViolation<Object> request) {
         return FieldErrorResponse.builder()

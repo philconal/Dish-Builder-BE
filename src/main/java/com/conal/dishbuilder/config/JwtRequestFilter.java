@@ -1,7 +1,10 @@
 package com.conal.dishbuilder.config;
 
+import com.conal.dishbuilder.domain.TenantEntity;
 import com.conal.dishbuilder.domain.UserEntity;
+import com.conal.dishbuilder.repository.TenantRepository;
 import com.conal.dishbuilder.repository.UserRepository;
+import com.conal.dishbuilder.service.TenantService;
 import com.conal.dishbuilder.util.JwtUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.FilterChain;
@@ -24,6 +27,7 @@ import java.io.IOException;
 public class JwtRequestFilter extends OncePerRequestFilter {
     private final JwtUtils jwtUtils;
     private final UserDetailsService userDetailsService;
+    private final TenantService tenantService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, @Nonnull HttpServletResponse response, @Nonnull FilterChain filterChain) throws ServletException, IOException {
@@ -42,6 +46,10 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
         }
+        // get the domain name of each tenant
+        String serverName = request.getServerName();
+        TenantEntity tenant = tenantService.findBySubDomain(serverName);
+        request.setAttribute("tenantId", tenant.getId());
         doFilter(request, response, filterChain);
     }
 }

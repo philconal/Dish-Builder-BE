@@ -1,5 +1,6 @@
 package com.conal.dishbuilder.domain;
 
+import com.conal.dishbuilder.constant.CommonStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -15,6 +16,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Builder
+@ToString
 public class TenantEntity extends Auditable<UUID> implements Serializable {
 
     @Id
@@ -42,12 +44,12 @@ public class TenantEntity extends Auditable<UUID> implements Serializable {
     @Column(name = "sub_domain", length = 255)
     private String subDomain;
 
+    @Column(name = "status", nullable = false)
+    private CommonStatus status;
+
     @OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL)
     private Set<TenantCustomizationEntity> customizations;
 
     @OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL)
     private Set<UserEntity> users;
-
-    @OneToMany(mappedBy = "tenant", cascade = CascadeType.ALL)
-    private Set<RoleEntity> roles;
 }

@@ -7,3 +7,6 @@ spring:
     config:
       profile: local
       label: master
+logging:
+  level:
+    org.springframework.security: DEBUG

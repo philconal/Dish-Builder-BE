@@ -5,13 +5,14 @@ import lombok.NonNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
-@Repository
-public interface TenantRepository extends JpaRepository<TenantEntity, UUID> {
+public interface TenantRepository extends JpaRepository<TenantEntity, UUID>{
     boolean existsByUrlSlug(@NonNull String url);
 
     boolean existsByName(@NonNull String name);
 
     boolean existsByEmail(@NonNull String email);
+    Optional<TenantEntity> findBySubDomain(@NonNull String domain);
 }

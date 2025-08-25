@@ -1,10 +1,7 @@
 package com.conal.dishbuilder.domain;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.apache.catalina.User;
 
 import java.io.Serializable;
@@ -14,10 +11,11 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "role", schema = "dish_builder_schema")
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Getter
+@Setter
 public class RoleEntity extends Auditable<UUID> implements Serializable {
 
     @Id
@@ -29,10 +27,6 @@ public class RoleEntity extends Auditable<UUID> implements Serializable {
 
     @Column(length = 255, nullable = false)
     private String description;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tenant_id", nullable = false)
-    private TenantEntity tenant;
 
     @ManyToMany(mappedBy = "roles")
     private Set<UserEntity> users;

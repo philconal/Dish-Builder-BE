@@ -7,11 +7,13 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.util.List;
+import java.util.Objects;
 
 @ControllerAdvice
 @Slf4j
@@ -33,7 +35,7 @@ public class GlobalExceptionHandler {
                     error.getRejectedValue();
                     return FieldErrorResponse.builder()
                             .setField(error.getField())
-                            .setRejectedValue(error.getRejectedValue().toString())
+                            .setRejectedValue(Objects.requireNonNull(error.getRejectedValue()).toString())
                             .setMessage(error.getDefaultMessage())
                             .build();
                 })
@@ -68,6 +70,17 @@ public class GlobalExceptionHandler {
                         HttpStatus.INTERNAL_SERVER_ERROR.value(),
                         ex.getMessage()
                 ));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<BaseResponse<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+        return ResponseEntity.badRequest()
+                .body(BaseResponse.error(HttpStatus.BAD_REQUEST.value(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(UnsupportedSortPropertyException .class)
+    public ResponseEntity<BaseResponse<Void>> handleInternalServerException(UnsupportedSortPropertyException  ex) {
+        return ResponseEntity.badRequest().body(BaseResponse.error(HttpStatus.BAD_REQUEST.value(), ex.getMessage()));
     }
 
     private static ErrorResponse mapeErrorResponse(List<FieldErrorResponse> ex) {
