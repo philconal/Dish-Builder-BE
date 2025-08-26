@@ -1,18 +1,17 @@
 package com.conal.dishbuilder.util;
 
-import com.conal.dishbuilder.constant.CommonStatus;
+import java.security.SecureRandom;
 
 public class CommonUtils {
 
-    public static String from(int value) {
-        return CommonStatus.values()[value].toString();
-    }
+    private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static final SecureRandom random = new SecureRandom();
 
-    public static String from(CommonStatus value) {
-        return value.name();
-    }
-
-    public static int getValue(CommonStatus value) {
-        return value.ordinal();
+    public static String genOTP(int length) {
+        StringBuilder otp = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            otp.append(CHARACTERS.charAt(random.nextInt(CHARACTERS.length())));
+        }
+        return otp.toString();
     }
 }

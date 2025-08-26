@@ -1,9 +1,8 @@
 package com.conal.dishbuilder.controller;
 
 import com.conal.dishbuilder.constant.Constants;
-import com.conal.dishbuilder.dto.request.LoginRequest;
-import com.conal.dishbuilder.dto.request.LoginResponse;
-import com.conal.dishbuilder.dto.request.UserAccountRequest;
+import com.conal.dishbuilder.dto.request.*;
+import com.conal.dishbuilder.dto.response.BaseResponse;
 import com.conal.dishbuilder.service.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -32,9 +31,18 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request, HttpServletResponse response) {
+    public ResponseEntity<BaseResponse<LoginResponse>> login(@RequestBody LoginRequest request, HttpServletResponse response) {
         LoginResponse login = authService.login(request);
-        return ResponseEntity.ok(Map.of("access_token", login.getAccessToken()));
+        return ResponseEntity.ok(BaseResponse.ok(login));
     }
-
+    @PostMapping("forgot-password")
+    public  ResponseEntity<BaseResponse<Boolean>> forgotPassword(@RequestBody ForgotPasswordRequest request){
+        boolean forgotPassword = authService.forgotPassword(request.getUsername());
+        return ResponseEntity.ok(BaseResponse.ok(forgotPassword));
+    }
+    @PostMapping("validate-otp")
+    public  ResponseEntity<BaseResponse<Boolean>> validateOtp(@RequestBody ValidateOtpRequest request){
+        boolean validateOtp = authService.validateOtp(request.getOtp());
+        return ResponseEntity.ok(BaseResponse.ok(validateOtp));
+    }
 }

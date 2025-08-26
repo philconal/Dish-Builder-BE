@@ -24,6 +24,11 @@ public class GlobalExceptionHandler {
         log.error("Not found Exception: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(BaseResponse.error(HttpStatus.NOT_FOUND.value(), e.getMessage()));
+    } @ExceptionHandler(AttemptExceededException.class)
+    public ResponseEntity<BaseResponse<Void>> handleAttemptExceededException(AttemptExceededException e) {
+        log.error("Maximum attempt Exception: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(BaseResponse.error(HttpStatus.TOO_MANY_REQUESTS.value(), e.getMessage()));
     }
 
     @ExceptionHandler({MethodArgumentNotValidException.class, ConstraintViolationException.class})

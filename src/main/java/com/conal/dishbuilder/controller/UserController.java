@@ -28,9 +28,7 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<BaseResponse<Boolean>> registerUser(HttpServletRequest request, @RequestBody RegisterUserRequest userRequest) {
-        var tenantId = (UUID) request.getAttribute("tenantId");
-        userRequest.setTenantId(tenantId);
+    public ResponseEntity<BaseResponse<Boolean>> registerUser(@RequestBody RegisterUserRequest userRequest) {
         boolean registered = userService.registerAccount(userRequest);
         return ResponseEntity.ok().body(BaseResponse.<Boolean>builder()
                 .setStatus(HttpStatus.OK.value())

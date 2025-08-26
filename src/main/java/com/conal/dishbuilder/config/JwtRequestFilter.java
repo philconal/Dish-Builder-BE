@@ -1,5 +1,7 @@
 package com.conal.dishbuilder.config;
 
+import com.conal.dishbuilder.context.TenantContextHolder;
+import com.conal.dishbuilder.context.UserContextHolder;
 import com.conal.dishbuilder.domain.TenantEntity;
 import com.conal.dishbuilder.domain.UserEntity;
 import com.conal.dishbuilder.repository.TenantRepository;
@@ -13,6 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -24,6 +27,7 @@ import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtRequestFilter extends OncePerRequestFilter {
     private final JwtUtils jwtUtils;
     private final UserDetailsService userDetailsService;
@@ -46,10 +50,18 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
         }
-        // get the domain name of each tenant
-        String serverName = request.getServerName();
-        TenantEntity tenant = tenantService.findBySubDomain(serverName);
-        request.setAttribute("tenantId", tenant.getId());
-        doFilter(request, response, filterChain);
+
+        try {
+            // get the domain name of each tenant
+            String serverName = request.getServerName();
+            TenantEntity tenant = tenantService.findBySubDomain(serverName);
+            TenantContextHolder.setTenantContext(tenant.getId());
+            UserContextHolder.setUserContext(username);
+            filterChain.doFilter(request, response);
+        } catch (Exception e) {
+            log.error("Error in JwtRequestFilter: {}", e.getMessage());
+        } finally {
+            TenantContextHolder.clearTenantContext();
+        }
     }
 }

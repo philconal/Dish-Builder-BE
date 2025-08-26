@@ -7,7 +7,7 @@ import com.conal.dishbuilder.dto.request.LoginResponse;
 public interface AuthService {
 
     LoginResponse login(LoginRequest request);
-    LoginResponse getAccessToken(String refreshToken);
-
+    boolean forgotPassword(String username);
+    boolean validateOtp(String otp);
     boolean logout(String refreshToken);
 }

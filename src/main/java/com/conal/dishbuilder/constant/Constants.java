@@ -16,4 +16,18 @@ public class Constants {
     public static class Tenant {
         public final static String NOT_FOUND = "TENANT NOT FOUND";
     }
+
+    public static class User {
+        public final static String NOT_FOUND = "USER NOT FOUND";
+        public final static String TOO_MANY_REQUESTS = "TOO_MANY_REQUESTS";
+        public final static String TOO_FAST = "TOO_FAST";
+    }
+
+    public static final int MAX_RETRIES = 5;
+    public static final int START = 0;
+    public static final int END = -1;
+    public static int EXPIRY_TIME = 5; //mins
+    public static int OTP_LENGTH = 6; //mins
+    public static String FORGOT_PASSWORD_OTP_TEMPLATE_FILE_PATH = "templates/otp-mail.html";
+    public static String SUBJECT = "[Dish-Builder] Xác thực tài khoản - OTP của bạn";
 }

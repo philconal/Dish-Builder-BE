@@ -22,7 +22,7 @@ public class UserEntity extends Auditable<UUID> implements Serializable {
     @GeneratedValue
     private UUID id;
 
-    @Column(nullable = false, length = 255,unique = true)
+    @Column(nullable = false, length = 255, unique = true)
     private String username;
 
     @Column(nullable = false, length = 255)

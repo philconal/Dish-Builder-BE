@@ -1,5 +1,6 @@
 package com.conal.dishbuilder.service.impl;
 
+import com.conal.dishbuilder.context.TenantContextHolder;
 import com.conal.dishbuilder.domain.UserEntity;
 import com.conal.dishbuilder.dto.request.RegisterUserRequest;
 import com.conal.dishbuilder.dto.request.UserAccountRequest;
@@ -17,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +30,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public boolean registerAccount(RegisterUserRequest request) {
+        UUID tenantId = TenantContextHolder.getTenantContext();
+        request.setTenantId(tenantId);
         List<FieldErrorResponse> errorResponses = userValidator.validateCreateAccount(request);
 
         if (!errorResponses.isEmpty()) {

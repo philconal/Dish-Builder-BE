@@ -22,21 +22,8 @@ public class DishBuilderApplication implements CommandLineRunner {
         log.info("Dish Builder Application started!!");
     }
 
-    @PostConstruct
-    public void init() {
-        String[] beanDefinitionNames = applicationContext.getBeanDefinitionNames();
-        for (String beanName : beanDefinitionNames) {
-            System.out.println(beanName);
-        }
-        String property = environment.getProperty("spring.flyway.baseline-on-migrate");
-        log.error("Property: {}", property);
-    }
-
     @Override
     public void run(String... args) throws Exception {
-        String[] beanDefinitionNames = applicationContext.getBeanDefinitionNames();
-        for (String beanName : beanDefinitionNames) {
-            System.out.println(beanName);
-        }
+
     }
 }
