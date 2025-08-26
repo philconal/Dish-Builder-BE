@@ -5,6 +5,7 @@ import com.conal.dishbuilder.dto.request.*;
 import com.conal.dishbuilder.dto.response.BaseResponse;
 import com.conal.dishbuilder.service.AuthService;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -31,18 +32,26 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<BaseResponse<LoginResponse>> login(@RequestBody LoginRequest request, HttpServletResponse response) {
+    public ResponseEntity<BaseResponse<LoginResponse>> login(@RequestBody LoginRequest request) {
         LoginResponse login = authService.login(request);
         return ResponseEntity.ok(BaseResponse.ok(login));
     }
+
     @PostMapping("forgot-password")
-    public  ResponseEntity<BaseResponse<Boolean>> forgotPassword(@RequestBody ForgotPasswordRequest request){
+    public ResponseEntity<BaseResponse<Boolean>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         boolean forgotPassword = authService.forgotPassword(request.getUsername());
         return ResponseEntity.ok(BaseResponse.ok(forgotPassword));
     }
+
     @PostMapping("validate-otp")
-    public  ResponseEntity<BaseResponse<Boolean>> validateOtp(@RequestBody ValidateOtpRequest request){
+    public ResponseEntity<BaseResponse<Boolean>> validateOtp(@Valid @RequestBody ValidateOtpRequest request) {
         boolean validateOtp = authService.validateOtp(request.getOtp());
         return ResponseEntity.ok(BaseResponse.ok(validateOtp));
+    }
+
+    @PostMapping("update-password")
+    public ResponseEntity<BaseResponse<Boolean>> updatePassword(@Valid @RequestBody UpdatePasswordRequest request) {
+        boolean isUpdated = authService.updatePassword(request);
+        return ResponseEntity.ok(BaseResponse.ok(isUpdated));
     }
 }

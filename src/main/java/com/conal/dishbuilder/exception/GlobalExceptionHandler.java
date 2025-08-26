@@ -20,15 +20,27 @@ import java.util.Objects;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<BaseResponse<Void>> handleNotFoundException(Exception e) {
+    public ResponseEntity<BaseResponse<Void>> handleNotFoundException(NotFoundException e) {
         log.error("Not found Exception: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(BaseResponse.error(HttpStatus.NOT_FOUND.value(), e.getMessage()));
-    } @ExceptionHandler(AttemptExceededException.class)
+    } @ExceptionHandler({BadRequestException.class, BadCredentialsException.class})
+    public ResponseEntity<BaseResponse<Void>> handleBadRequestException(BadRequestException e) {
+        log.error("Not found Exception: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(BaseResponse.error(HttpStatus.BAD_REQUEST.value(), e.getMessage()));
+    }
+
+    @ExceptionHandler(AttemptExceededException.class)
     public ResponseEntity<BaseResponse<Void>> handleAttemptExceededException(AttemptExceededException e) {
         log.error("Maximum attempt Exception: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                 .body(BaseResponse.error(HttpStatus.TOO_MANY_REQUESTS.value(), e.getMessage()));
+    } @ExceptionHandler(IllegalAccessException.class)
+    public ResponseEntity<BaseResponse<Void>> handleIllegalAccessException(IllegalAccessException e) {
+        log.error("Invalid step: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(BaseResponse.error(HttpStatus.FORBIDDEN.value(), e.getMessage()));
     }
 
     @ExceptionHandler({MethodArgumentNotValidException.class, ConstraintViolationException.class})
@@ -83,8 +95,8 @@ public class GlobalExceptionHandler {
                 .body(BaseResponse.error(HttpStatus.BAD_REQUEST.value(), ex.getMessage()));
     }
 
-    @ExceptionHandler(UnsupportedSortPropertyException .class)
-    public ResponseEntity<BaseResponse<Void>> handleInternalServerException(UnsupportedSortPropertyException  ex) {
+    @ExceptionHandler(UnsupportedSortPropertyException.class)
+    public ResponseEntity<BaseResponse<Void>> handleInternalServerException(UnsupportedSortPropertyException ex) {
         return ResponseEntity.badRequest().body(BaseResponse.error(HttpStatus.BAD_REQUEST.value(), ex.getMessage()));
     }
 

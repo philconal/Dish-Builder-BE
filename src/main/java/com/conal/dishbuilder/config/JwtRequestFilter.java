@@ -56,7 +56,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             String serverName = request.getServerName();
             TenantEntity tenant = tenantService.findBySubDomain(serverName);
             TenantContextHolder.setTenantContext(tenant.getId());
-            UserContextHolder.setUserContext(username);
+
+            UserContextHolder.setUserContext("conal");
             filterChain.doFilter(request, response);
         } catch (Exception e) {
             log.error("Error in JwtRequestFilter: {}", e.getMessage());

@@ -3,6 +3,7 @@ package com.conal.dishbuilder.service;
 
 import com.conal.dishbuilder.dto.request.LoginRequest;
 import com.conal.dishbuilder.dto.request.LoginResponse;
+import com.conal.dishbuilder.dto.request.UpdatePasswordRequest;
 
 public interface AuthService {
 
@@ -10,4 +11,7 @@ public interface AuthService {
     boolean forgotPassword(String username);
     boolean validateOtp(String otp);
     boolean logout(String refreshToken);
+
+    boolean updatePassword(UpdatePasswordRequest request);
+
 }

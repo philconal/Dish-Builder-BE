@@ -90,7 +90,7 @@ public class TenantServiceImpl implements TenantService {
         // for local test only
         if (Arrays.asList(environment.getActiveProfiles()).contains("local")) {
             HashMap<String, TenantEntity> hashMap = new HashMap<>();
-            hashMap.put("localhost", TenantEntity.builder().id(UUID.fromString("7cccdad4-c562-402b-8dce-d64559a91500")).build());
+            hashMap.put("localhost", TenantEntity.builder().id(UUID.fromString("06805dbf-2299-4415-bef3-f53d40b69589")).build());
             hashMap.put("conal1.local", TenantEntity.builder().id(UUID.randomUUID()).build());
             hashMap.put("conal2.local", TenantEntity.builder().id(UUID.randomUUID()).build());
             hashMap.put("conal3.local", TenantEntity.builder().id(UUID.randomUUID()).build());
