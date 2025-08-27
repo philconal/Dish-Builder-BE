@@ -8,8 +8,11 @@ import com.conal.dishbuilder.dto.request.UpdatePasswordRequest;
 public interface AuthService {
 
     LoginResponse login(LoginRequest request);
-    boolean forgotPassword(String username);
-    boolean validateOtp(String otp);
+
+    String forgotPassword(String username);
+
+    boolean validateOtp(String sessionId, String otp);
+
     boolean logout(String refreshToken);
 
     boolean updatePassword(UpdatePasswordRequest request);

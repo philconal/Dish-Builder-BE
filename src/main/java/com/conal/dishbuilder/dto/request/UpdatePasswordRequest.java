@@ -17,4 +17,6 @@ public class UpdatePasswordRequest {
     private boolean isPasswordsMatching() {
         return password != null && password.equals(confirmedPassword);
     }
+    @NotBlank(message = "SessionId must not be empty")
+    private String sessionId;
 }

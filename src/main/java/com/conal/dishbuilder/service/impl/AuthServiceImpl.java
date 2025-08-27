@@ -38,7 +38,6 @@ import static com.conal.dishbuilder.constant.Constants.OTP_LENGTH;
 import static com.conal.dishbuilder.constant.Constants.User.TOO_FAST;
 import static com.conal.dishbuilder.constant.Constants.User.TOO_MANY_REQUESTS;
 
-
 @Service
 @AllArgsConstructor
 @Slf4j
@@ -53,8 +52,14 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public LoginResponse login(LoginRequest request) {
         UUID tenantId = TenantContextHolder.getTenantContext();
+        log.info("Login attempt for username: {} in tenant: {}", request.getUsername(), tenantId);
+
         UserEntity user = userRepository.findByUsernameAndTenantId(request.getUsername(), tenantId)
-                .orElseThrow(() -> new BadRequestException("Invalid username or password"));
+                .orElseThrow(() -> {
+                    log.warn("Login failed - User not found for username: {}", request.getUsername());
+                    return new BadRequestException("Invalid username or password");
+                });
+
         var token = new UsernamePasswordAuthenticationToken(user.getUsername(), request.getPassword());
 
         try {
@@ -62,55 +67,87 @@ public class AuthServiceImpl implements AuthService {
             UserDetails userDetails = (UserDetails) authenticate.getPrincipal();
 
             String accessToken = jwtUtils.generateAccessToken(userDetails);
+            log.info("Login successful for user: {}", user.getUsername());
+
             return LoginResponse.builder()
                     .accessToken(accessToken)
                     .build();
         } catch (AuthenticationException e) {
+            log.warn("Authentication failed for username: {}", request.getUsername());
             throw new BadRequestException("Invalid username or password");
         }
-
     }
 
     @Override
-    public boolean forgotPassword(String username) {
+    public String forgotPassword(String username) {
         UUID tenantId = TenantContextHolder.getTenantContext();
+        log.info("Forgot password requested for username: {}", username);
+
         UserEntity user = userRepository.findByUsernameAndTenantId(username, tenantId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
-        SendOTPResponse otpResponse = rateLimitService.canSendOtp(Actions.FORGOT_PASSWORD.name(), user.getUsername());
+                .orElseThrow(() -> {
+                    log.warn("Forgot password - User not found: {}", username);
+                    return new NotFoundException("User not found");
+                });
 
+        SendOTPResponse otpResponse = rateLimitService.canSendOtp(Actions.FORGOT_PASSWORD.name(), username);
         if (!otpResponse.isCanSend()) {
-            throw new AttemptExceededException(otpResponse.getErrorType().equals(ErrorType.TOO_FAST) ? TOO_FAST : TOO_MANY_REQUESTS);
+            String reason = otpResponse.getErrorType().equals(ErrorType.TOO_FAST) ? TOO_FAST : TOO_MANY_REQUESTS;
+            log.warn("OTP send blocked for {} due to rate limiting: {}", username, reason);
+            throw new AttemptExceededException(reason);
         }
-        String otpCode = CommonUtils.genOTP(OTP_LENGTH);
 
-        String htmlContent = FileUtils.loadTemplate(otpCode, Constants.FORGOT_PASSWORD_OTP_TEMPLATE_FILE_PATH);
-        boolean isSent = mailService.sendMail(user.getEmail(), Constants.SUBJECT, htmlContent);
-        if (isSent) {
-            //save the otp to validate
-            redisUtils.set(redisUtils.genKey(Actions.FORGOT_PASSWORD.name(), user.getUsername()), otpCode);
-            rateLimitService.logSuccessfullySent(Actions.FORGOT_PASSWORD.name(), user.getUsername());
+        String otp = CommonUtils.genOTP(OTP_LENGTH);
+        log.debug("Generated OTP for user: {} is {}", username, otp); // Consider removing in production
+
+        String htmlContent = FileUtils.loadTemplate(otp, Constants.FORGOT_PASSWORD_OTP_TEMPLATE_FILE_PATH);
+
+        if (!mailService.sendMail(user.getEmail(), Constants.SUBJECT, htmlContent)) {
+            log.error("Failed to send OTP email to user: {}", username);
+            throw new InternalServerException("Failed to send OTP");
         }
-        return true;
+
+        String otpKey = redisUtils.genKey(Actions.FORGOT_PASSWORD.name(), username);
+        String sessionId = UUID.randomUUID().toString();
+        String sessionKey = redisUtils.genKey(Actions.VALIDATE_OTP.name(), sessionId);
+
+        redisUtils.set(otpKey, otp, Constants.EXPIRY_TIME);
+        redisUtils.set(sessionKey, "false", Constants.EXPIRY_TIME);
+
+        rateLimitService.logSuccessfullySent(Actions.FORGOT_PASSWORD.name(), username);
+        log.info("OTP sent and session created for user: {}, sessionId: {}", username, sessionId);
+
+        return sessionId;
     }
 
     @Override
-    public boolean validateOtp(String otp) {
+    public boolean validateOtp(String sessionId, String otp) {
         String username = UserContextHolder.getUserContext();
-        String key = redisUtils.genKey(Actions.FORGOT_PASSWORD.name(), username);
-        String savedOtp = redisUtils.get(key);
-        // Do not need to check the expriry time here since the redis will remove the otp after the default time
-        if (StringUtils.isNoneBlank(savedOtp) || !otp.equals(savedOtp)) {
-            throw new BadRequestException("Invalid otp");
+        log.info("Validating OTP for user: {} with sessionId: {}", username, sessionId);
+
+        String otpKey = redisUtils.genKey(Actions.FORGOT_PASSWORD.name(), username);
+        String savedOtp = redisUtils.get(otpKey);
+
+        if (StringUtils.isBlank(savedOtp)) {
+            log.warn("No OTP found for user: {}", username);
+            throw new BadRequestException("OTP has expired or not requested");
         }
-        // save the verify user
-        String validatedKey = redisUtils.genKey(Actions.VALIDATE_OTP.name(), username);
-        redisUtils.set(validatedKey, "true");
+
+        if (!savedOtp.equals(otp)) {
+            log.warn("Incorrect OTP entered for user: {}", username);
+            throw new BadRequestException("Invalid OTP");
+        }
+
+        String sessionKey = redisUtils.genKey(Actions.VALIDATE_OTP.name(), sessionId);
+        redisUtils.set(sessionKey, "true", Constants.EXPIRY_TIME);
+        redisUtils.remove(otpKey);
+
+        log.info("OTP successfully validated for user: {}, sessionId: {}", username, sessionId);
         return true;
     }
 
     @Override
     public boolean logout(String refreshToken) {
-
+        log.info("Logout triggered. (Refresh token logic not implemented yet)");
         return true;
     }
 
@@ -118,26 +155,32 @@ public class AuthServiceImpl implements AuthService {
     public boolean updatePassword(UpdatePasswordRequest request) {
         String username = UserContextHolder.getUserContext();
         UUID tenantId = TenantContextHolder.getTenantContext();
-        String key = redisUtils.genKey(Actions.VALIDATE_OTP.name(), username);
-        String isValidated = redisUtils.get(key);
-        if (StringUtils.isBlank(isValidated) || isValidated.equals("false")) {
-            throw new IllegalAccessException("Verify the  otp first. Before updating new password.");
+        String sessionKey = redisUtils.genKey(Actions.VALIDATE_OTP.name(), request.getSessionId());
+
+        log.info("Password update requested by user: {} with sessionId: {}", username, request.getSessionId());
+
+        String isValidated = redisUtils.get(sessionKey);
+        if (!"true".equals(isValidated)) {
+            log.warn("Password update denied for user: {} - OTP not validated or session expired", username);
+            throw new IllegalAccessException("OTP validation required");
         }
+
         UserEntity user = userRepository.findByUsernameAndTenantId(username, tenantId)
-                .orElseThrow(() -> new NotFoundException("Current user not found."));
+                .orElseThrow(() -> {
+                    log.error("User not found during password update: {}", username);
+                    return new NotFoundException("User not found");
+                });
+
         user.setPassword(PasswordUtils.hashPassword(request.getPassword().trim()));
+
         try {
             userRepository.save(user);
-            String otpKey = redisUtils.genKey(Actions.FORGOT_PASSWORD.name(), username);
-            if(redisUtils.remove(key) && redisUtils.remove(otpKey)){
-                log.info("Remove key: {}",key);
-            }else{
-                log.error("Remove key error");
-            }
+            redisUtils.remove(sessionKey);
+            log.info("Password updated successfully for user: {}", username);
+            return true;
         } catch (Exception e) {
-            log.error("Error while saving user: {}", e.getMessage());
-            throw new InternalServerException("Error while updating password");
+            log.error("Password update failed for user: {} - {}", username, e.getMessage(), e);
+            throw new InternalServerException("Failed to update password");
         }
-        return true;
     }
 }

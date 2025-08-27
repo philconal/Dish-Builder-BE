@@ -32,19 +32,26 @@ public class UserServiceImpl implements UserService {
     public boolean registerAccount(RegisterUserRequest request) {
         UUID tenantId = TenantContextHolder.getTenantContext();
         request.setTenantId(tenantId);
-        List<FieldErrorResponse> errorResponses = userValidator.validateCreateAccount(request);
 
+        log.info("Registering new user under tenantId: {}", tenantId);
+
+        List<FieldErrorResponse> errorResponses = userValidator.validateCreateAccount(request);
         if (!errorResponses.isEmpty()) {
+            log.warn("User registration failed validation: {}", errorResponses);
             throw new MultipleFieldValidationException(errorResponses);
         }
+
         UserEntity userEntity = userMapper.toEntity(request);
         userEntity.setPassword(PasswordUtils.hashPassword(userEntity.getPassword()));
+
         try {
             userRepository.save(userEntity);
+            log.info("User registered successfully: {}", userEntity.getEmail());
         } catch (Exception e) {
-            log.error("Error while saving user: {}", userEntity);
-            throw new InternalServerException(e.getMessage());
+            log.error("Error while saving user: {}", userEntity.getEmail(), e);
+            throw new InternalServerException("Failed to save user: " + e.getMessage());
         }
+
         return true;
     }
 }

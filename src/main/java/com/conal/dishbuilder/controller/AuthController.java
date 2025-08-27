@@ -38,14 +38,14 @@ public class AuthController {
     }
 
     @PostMapping("forgot-password")
-    public ResponseEntity<BaseResponse<Boolean>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        boolean forgotPassword = authService.forgotPassword(request.getUsername());
-        return ResponseEntity.ok(BaseResponse.ok(forgotPassword));
+    public ResponseEntity<BaseResponse<String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        String sessionId = authService.forgotPassword(request.getUsername());
+        return ResponseEntity.ok(BaseResponse.ok(sessionId));
     }
 
     @PostMapping("validate-otp")
     public ResponseEntity<BaseResponse<Boolean>> validateOtp(@Valid @RequestBody ValidateOtpRequest request) {
-        boolean validateOtp = authService.validateOtp(request.getOtp());
+        boolean validateOtp = authService.validateOtp(request.getSessionId(), request.getOtp());
         return ResponseEntity.ok(BaseResponse.ok(validateOtp));
     }
 

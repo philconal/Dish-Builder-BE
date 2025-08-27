@@ -8,4 +8,6 @@ public class ValidateOtpRequest {
 
     @NotBlank(message = "Otp must not be blank")
     private String otp;
+    @NotBlank(message = "SessionId must not be empty")
+    private String sessionId;
 }

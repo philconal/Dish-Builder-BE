@@ -13,6 +13,7 @@ import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -24,7 +25,9 @@ import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
+@Slf4j
 public class TenantQueryDslRepositoryImpl implements TenantQueryDslRepository {
+
     private final QTenantEntity tenant = QTenantEntity.tenantEntity;
     private final JPAQueryFactory factory;
     private final TenantMapper tenantMapper;
@@ -33,64 +36,79 @@ public class TenantQueryDslRepositoryImpl implements TenantQueryDslRepository {
     public PageResponse<TenantResponse> findAll(TenantFilterRequest filter, Pageable pageable) {
         BooleanBuilder conditionBuilder = new BooleanBuilder();
 
+        log.debug("Filtering tenants with filter: {}", filter);
+
         if (StringUtils.isNotBlank(filter.getName())) {
-            conditionBuilder.and(tenant.name.contains(filter.getName().trim()));
-        }
-        if (StringUtils.isNotBlank(filter.getDomain())) {
-            conditionBuilder.and(tenant.subDomain.contains(filter.getDomain().trim()));
+            conditionBuilder.and(tenant.name.containsIgnoreCase(filter.getName().trim()));
         }
 
-        // Case ignore paging
+        if (StringUtils.isNotBlank(filter.getDomain())) {
+            conditionBuilder.and(tenant.subDomain.containsIgnoreCase(filter.getDomain().trim()));
+        }
+
+        // Ignore pagination
         if (Boolean.TRUE.equals(filter.isIgnorePaging())) {
-            var entities = factory.selectFrom(tenant)
+            log.info("Fetching all tenants without pagination");
+
+            List<TenantEntity> entities = factory.selectFrom(tenant)
                     .where(conditionBuilder)
                     .fetch();
 
-            var responses = entities.stream()
+            List<TenantResponse> responses = entities.stream()
                     .map(tenantMapper::toDto)
                     .toList();
 
-            return PageResponse.fromPage(new PageImpl<>(responses, Pageable.unpaged(), entities.size()));
+            return PageResponse.fromPage(new PageImpl<>(responses, Pageable.unpaged(), responses.size()));
         }
 
-        // Main query with pagination + sorting
-        var entities = factory.selectFrom(tenant)
+        log.info("Fetching tenants with pagination - page: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
+
+        List<OrderSpecifier<?>> orderSpecifiers = getOrderSpecifiers(pageable);
+        log.debug("Sorting with: {}", orderSpecifiers);
+
+        List<TenantEntity> pagedEntities = factory.selectFrom(tenant)
                 .where(conditionBuilder)
-                .orderBy(getOrderSpecifiers(pageable).toArray(OrderSpecifier[]::new))
+                .orderBy(orderSpecifiers.toArray(OrderSpecifier[]::new))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
 
-        var total = factory.select(tenant.count().coalesce(0L)) //Actually in coalesce always return 0L if null no records returned
+        Long totalCount = factory.select(tenant.count().coalesce(0L))
                 .from(tenant)
                 .where(conditionBuilder)
                 .fetchOne();
 
-        var responses = entities.stream()
+        long safeTotal = totalCount != null ? totalCount : 0L;
+
+        List<TenantResponse> responses = pagedEntities.stream()
                 .map(tenantMapper::toDto)
                 .toList();
 
-        long safeTotal = total != null ? total : 0L;
+        log.info("Fetched {} tenants out of total {}", responses.size(), safeTotal);
 
         return PageResponse.fromPage(new PageImpl<>(responses, pageable, safeTotal));
     }
 
-    public List<? extends OrderSpecifier<?>> getOrderSpecifiers(Pageable pageable) {
+    public List<OrderSpecifier<?>> getOrderSpecifiers(Pageable pageable) {
         return pageable.getSort()
                 .stream()
                 .map(this::toOrderSpecifier)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     private OrderSpecifier<?> toOrderSpecifier(Sort.Order order) {
         Order direction = order.isAscending() ? Order.ASC : Order.DESC;
 
+        log.debug("Creating order specifier - property: {}, direction: {}", order.getProperty(), direction);
+
         return switch (order.getProperty()) {
             case "name" -> new OrderSpecifier<>(direction, tenant.name);
             case "domain" -> new OrderSpecifier<>(direction, tenant.subDomain);
             case "createdAt" -> new OrderSpecifier<>(direction, tenant.createdAt);
-            default -> throw new UnsupportedSortPropertyException("Unsupported sort property: " + order.getProperty());
+            default -> {
+                log.error("Unsupported sort property: {}", order.getProperty());
+                throw new UnsupportedSortPropertyException("Unsupported sort property: " + order.getProperty());
+            }
         };
     }
-
 }

@@ -28,11 +28,11 @@ import java.util.HashMap;
 import java.util.Optional;
 import java.util.UUID;
 
-
-@RequiredArgsConstructor
 @Slf4j
+@RequiredArgsConstructor
 @Service
 public class TenantServiceImpl implements TenantService {
+
     private final TenantValidator tenantValidator;
     private final TenantMapper tenantMapper;
     private final TenantRepository tenantRepository;
@@ -42,62 +42,90 @@ public class TenantServiceImpl implements TenantService {
     @Override
     @Transactional
     public boolean registerTenant(CreateTenantRequest request) {
+        log.info("Registering new tenant with name: {}", request.getName());
+
         var errorResponses = tenantValidator.validateCreateTenant(request);
         if (!errorResponses.isEmpty()) {
+            log.warn("Tenant registration failed due to validation errors: {}", errorResponses);
             throw new MultipleFieldValidationException(errorResponses);
         }
+
         TenantEntity tenantEntity = tenantMapper.toEntity(request);
+
         try {
             tenantRepository.save(tenantEntity);
+            log.info("Tenant saved successfully: {}", tenantEntity.getId());
+            return true;
         } catch (Exception e) {
-            log.error("Error while saving tenant: {}", e.getMessage());
-            throw new InternalServerException(e.getMessage());
+            log.error("Error while saving tenant: {}", e.getMessage(), e);
+            throw new InternalServerException("Unable to register tenant");
         }
-        return true;
     }
 
     @Override
     @Transactional
     public boolean updateTenant(UpdateTenantRequest request) {
-        TenantEntity tenantEntity = tenantRepository.findById(request.getId())
-                .orElseThrow(() -> new NotFoundException(Constants.Tenant.NOT_FOUND));
+        log.info("Updating tenant with ID: {}", request.getId());
 
-        var errorResponses = tenantValidator.validateUpdateTenant(request, tenantEntity);
+        TenantEntity existingTenant = tenantRepository.findById(request.getId())
+                .orElseThrow(() -> {
+                    log.warn("Tenant not found with ID: {}", request.getId());
+                    return new NotFoundException(Constants.Tenant.NOT_FOUND);
+                });
+
+        var errorResponses = tenantValidator.validateUpdateTenant(request, existingTenant);
         if (!errorResponses.isEmpty()) {
+            log.warn("Tenant update validation failed: {}", errorResponses);
             throw new MultipleFieldValidationException(errorResponses);
         }
-        TenantEntity newTenantEntity = tenantMapper.toEntity(request);
-        newTenantEntity.setSubDomain(tenantEntity.getSubDomain());
-        newTenantEntity.setUrlSlug(tenantEntity.getUrlSlug());
-        TenantEntity tenant = null;
+
+        TenantEntity updatedTenant = tenantMapper.toEntity(request);
+        updatedTenant.setSubDomain(existingTenant.getSubDomain()); // Keep original values
+        updatedTenant.setUrlSlug(existingTenant.getUrlSlug());
+
         try {
-            tenant = tenantRepository.save(newTenantEntity);
+            tenantRepository.save(updatedTenant);
+            log.info("Tenant updated successfully: {}", updatedTenant.getId());
+            return true;
         } catch (Exception e) {
-            log.error("Error while saving tenant: {}", e.getMessage());
-            throw new InternalServerException(e.getMessage());
+            log.error("Error while updating tenant: {}", e.getMessage(), e);
+            throw new InternalServerException("Failed to update tenant");
         }
-        log.info("Update tenant successfully: {}", tenant);
-        return true;
     }
 
     @Override
     public PageResponse<TenantResponse> findAll(TenantFilterRequest filter, Pageable pageable) {
-        return tenantQueryDslRepository.findAll(filter, pageable);
+        log.info("Fetching tenants with filter: {}", filter);
+        PageResponse<TenantResponse> response = tenantQueryDslRepository.findAll(filter, pageable);
+        log.info("Fetched {} tenants", response.getData().size());
+        return response;
     }
 
     @Override
     public TenantEntity findBySubDomain(String subDomain) {
-        // for local test only
+        log.info("Looking up tenant by subdomain: {}", subDomain);
+
         if (Arrays.asList(environment.getActiveProfiles()).contains("local")) {
-            HashMap<String, TenantEntity> hashMap = new HashMap<>();
-            hashMap.put("localhost", TenantEntity.builder().id(UUID.fromString("06805dbf-2299-4415-bef3-f53d40b69589")).build());
-            hashMap.put("conal1.local", TenantEntity.builder().id(UUID.randomUUID()).build());
-            hashMap.put("conal2.local", TenantEntity.builder().id(UUID.randomUUID()).build());
-            hashMap.put("conal3.local", TenantEntity.builder().id(UUID.randomUUID()).build());
-            return hashMap.get(subDomain);
+            log.debug("Using local mock tenant map for subdomain: {}", subDomain);
+
+            HashMap<String, TenantEntity> mockTenants = new HashMap<>();
+            mockTenants.put("localhost", TenantEntity.builder().id(UUID.fromString("06805dbf-2299-4415-bef3-f53d40b69589")).build());
+            mockTenants.put("conal1.local", TenantEntity.builder().id(UUID.randomUUID()).build());
+            mockTenants.put("conal2.local", TenantEntity.builder().id(UUID.randomUUID()).build());
+            mockTenants.put("conal3.local", TenantEntity.builder().id(UUID.randomUUID()).build());
+
+            TenantEntity localTenant = mockTenants.get(subDomain);
+            if (localTenant == null) {
+                log.warn("Local mock tenant not found for subdomain: {}", subDomain);
+                throw new NotFoundException(Constants.Tenant.NOT_FOUND);
+            }
+            return localTenant;
         }
 
         return tenantRepository.findBySubDomain(subDomain)
-                .orElseThrow(() -> new NotFoundException(Constants.Tenant.NOT_FOUND));
+                .orElseThrow(() -> {
+                    log.warn("Tenant not found for subdomain: {}", subDomain);
+                    return new NotFoundException(Constants.Tenant.NOT_FOUND);
+                });
     }
 }
