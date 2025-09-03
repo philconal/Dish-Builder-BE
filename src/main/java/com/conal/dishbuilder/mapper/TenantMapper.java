@@ -7,19 +7,18 @@ import com.conal.dishbuilder.dto.request.CreateTenantRequest;
 import com.conal.dishbuilder.dto.request.RegisterUserRequest;
 import com.conal.dishbuilder.dto.request.UpdateTenantRequest;
 import com.conal.dishbuilder.dto.response.TenantResponse;
-import org.mapstruct.AfterMapping;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
+import org.mapstruct.*;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface TenantMapper {
     TenantEntity toEntity(CreateTenantRequest request);
-    TenantEntity toEntity(UpdateTenantRequest request);
+
     TenantResponse toDto(TenantEntity tenant);
 
     @AfterMapping
-    default void afterMapping( @MappingTarget TenantEntity.TenantEntityBuilder  entity) {
+    default void afterMapping(@MappingTarget TenantEntity.TenantEntityBuilder entity) {
         entity.status(CommonStatus.ACTIVE);
     }
+
+    void updateFromRequest(UpdateTenantRequest request, @MappingTarget TenantEntity existingTenant);
 }

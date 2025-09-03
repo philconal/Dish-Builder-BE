@@ -1,10 +1,12 @@
 package com.conal.dishbuilder.util;
 
+import com.conal.dishbuilder.constant.TokenType;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -18,12 +20,15 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Component
+@RequiredArgsConstructor
 public class JwtUtils {
     private static final long EXPIRATION_TIME = 3 * 60 * 1000;       // 1 minute
     private static final long REFRESH_TIME = 7 * 24 * 60 * 60 * 1000; // 7 days
+    private final RedisUtils redisUtils;
 
     private Key getSecretKey() {
         return Keys.hmacShaKeyFor("your-super-secret-key-1111111111111111111".getBytes(StandardCharsets.UTF_8));
@@ -42,16 +47,11 @@ public class JwtUtils {
                 .compact();
     }
 
-    public String generateAccessToken(UserDetails user, Integer tokenVersion) {
+    public String generateAccessToken(UserDetails user) {
         Map<String, Object> claims = Map.of(
-                "authorities", user.getAuthorities(),
-                "version", tokenVersion
+                "authorities", user.getAuthorities()
         );
         return generateToken(claims, user.getUsername(), EXPIRATION_TIME);
-    }
-
-    public String generateAccessToken(UserDetails user) {
-        return generateAccessToken(user, 0);
     }
 
     public String generateRefreshToken(UserDetails user) {
@@ -87,6 +87,11 @@ public class JwtUtils {
         return expiration.before(new Date());
     }
 
+    public long getExpiry(String token) {
+        Date expiration = getAllClaims(token).getExpiration();
+        return expiration.getTime() - System.currentTimeMillis();
+    }
+
     public LocalDateTime getRefreshExpiration() {
         Duration refreshDuration = Duration.ofDays(7); // example
         return Instant.now()
@@ -106,4 +111,22 @@ public class JwtUtils {
     public Integer getTokenVersion(String token) {
         return getAllClaims(token).get("version", Integer.class);
     }
+
+    public void addTokenIntoBlacklist(String token, TokenType tokenType) {
+        long remainingTime = getExpiry(token) - System.currentTimeMillis();
+        if (remainingTime > 0) {
+            redisUtils.set(
+                    redisUtils.genKey("blacklisted:", tokenType.name(), token),
+                    "1",
+                    remainingTime,
+                    TimeUnit.MILLISECONDS
+            );
+        }
+    }
+
+    public boolean existsTokenInBlacklist(String token, TokenType tokenType) {
+        String key = redisUtils.genKey("blacklisted:", tokenType.name(), token);
+        return redisUtils.exists(key);
+    }
+
 }

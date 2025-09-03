@@ -1,19 +1,16 @@
 package com.conal.dishbuilder.config;
 
+import com.conal.dishbuilder.constant.CommonStatus;
+import com.conal.dishbuilder.constant.TokenType;
 import com.conal.dishbuilder.context.TenantContextHolder;
 import com.conal.dishbuilder.context.UserContextHolder;
 import com.conal.dishbuilder.domain.TenantEntity;
-import com.conal.dishbuilder.domain.UserEntity;
-import com.conal.dishbuilder.repository.TenantRepository;
-import com.conal.dishbuilder.repository.UserRepository;
 import com.conal.dishbuilder.service.TenantService;
 import com.conal.dishbuilder.util.JwtUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,8 +19,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-import java.io.IOException;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -34,7 +30,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     private final TenantService tenantService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, @Nonnull HttpServletResponse response, @Nonnull FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, @Nonnull HttpServletResponse response, @Nonnull FilterChain filterChain) {
         String header = request.getHeader("Authorization");
         String token = null;
         String username = null;
@@ -42,27 +38,35 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             token = header.substring(7);
             username = jwtUtils.getUsername(token);
         }
+        
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-            if (jwtUtils.validateToken(token)) {
-                var auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                auth.setDetails(userDetails);
-                SecurityContextHolder.getContext().setAuthentication(auth);
+            try {
+                // Set default tenant context for authentication
+                TenantEntity defaultTenant = tenantService.findDefaultTenant();
+                TenantContextHolder.setTenantContext(defaultTenant.getId());
+                
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                if (jwtUtils.validateToken(token) && !jwtUtils.existsTokenInBlacklist(token, TokenType.ACCESS)) {
+                    var auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    auth.setDetails(userDetails);
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                }
+            } catch (Exception e) {
+                log.error("Error during authentication: {}", e.getMessage());
             }
         }
 
         try {
-            // get the domain name of each tenant
-            String serverName = request.getServerName();
-            TenantEntity tenant = tenantService.findBySubDomain(serverName);
+            // Always set default tenant context for the request
+            TenantEntity tenant = tenantService.findDefaultTenant();
             TenantContextHolder.setTenantContext(tenant.getId());
-
-            UserContextHolder.setUserContext("conal");
+            UserContextHolder.setUserContext(username);
             filterChain.doFilter(request, response);
         } catch (Exception e) {
             log.error("Error in JwtRequestFilter: {}", e.getMessage());
         } finally {
             TenantContextHolder.clearTenantContext();
+            UserContextHolder.clearUserContext();
         }
     }
 }

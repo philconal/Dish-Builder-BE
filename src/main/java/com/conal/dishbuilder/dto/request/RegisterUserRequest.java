@@ -1,5 +1,6 @@
 package com.conal.dishbuilder.dto.request;
 
+import com.conal.dishbuilder.constant.UserType;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -31,8 +32,11 @@ public class RegisterUserRequest extends BaseRequest {
     private String phone;
     @Size(max = 255, message = "Avatar URL must not exceed 255 characters")
     private String avtUrl;
+
     @AssertTrue(message = "Passwords do not match")
     private boolean isPasswordsMatching() {
         return password != null && password.equals(confirmedPassword);
     }
+
+    private UserType userType;
 }

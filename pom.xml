@@ -26,6 +26,7 @@
 		<spring-cloud.version>2025.0.0</spring-cloud.version>
 		<lombok.version>1.18.32</lombok.version>
 		<mapstruct.version>1.5.5.Final</mapstruct.version>
+		<querydsl.version>5.0.0</querydsl.version>
 	</properties>
 
 	<dependencies>

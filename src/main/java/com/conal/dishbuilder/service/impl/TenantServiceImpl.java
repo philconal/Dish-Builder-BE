@@ -1,9 +1,10 @@
 package com.conal.dishbuilder.service.impl;
 
+import com.conal.dishbuilder.constant.CommonStatus;
 import com.conal.dishbuilder.constant.Constants;
 import com.conal.dishbuilder.domain.TenantEntity;
 import com.conal.dishbuilder.dto.request.CreateTenantRequest;
-import com.conal.dishbuilder.dto.request.TenantFilterRequest;
+import com.conal.dishbuilder.dto.request.filter.TenantFilterRequest;
 import com.conal.dishbuilder.dto.request.UpdateTenantRequest;
 import com.conal.dishbuilder.dto.response.PageResponse;
 import com.conal.dishbuilder.dto.response.TenantResponse;
@@ -19,13 +20,11 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.env.Environment;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -79,13 +78,11 @@ public class TenantServiceImpl implements TenantService {
             throw new MultipleFieldValidationException(errorResponses);
         }
 
-        TenantEntity updatedTenant = tenantMapper.toEntity(request);
-        updatedTenant.setSubDomain(existingTenant.getSubDomain()); // Keep original values
-        updatedTenant.setUrlSlug(existingTenant.getUrlSlug());
+         tenantMapper.updateFromRequest(request,existingTenant);
 
         try {
-            tenantRepository.save(updatedTenant);
-            log.info("Tenant updated successfully: {}", updatedTenant.getId());
+            tenantRepository.save(existingTenant);
+            log.info("Tenant updated successfully: {}", existingTenant.getId());
             return true;
         } catch (Exception e) {
             log.error("Error while updating tenant: {}", e.getMessage(), e);
@@ -109,10 +106,7 @@ public class TenantServiceImpl implements TenantService {
             log.debug("Using local mock tenant map for subdomain: {}", subDomain);
 
             HashMap<String, TenantEntity> mockTenants = new HashMap<>();
-            mockTenants.put("localhost", TenantEntity.builder().id(UUID.fromString("06805dbf-2299-4415-bef3-f53d40b69589")).build());
-            mockTenants.put("conal1.local", TenantEntity.builder().id(UUID.randomUUID()).build());
-            mockTenants.put("conal2.local", TenantEntity.builder().id(UUID.randomUUID()).build());
-            mockTenants.put("conal3.local", TenantEntity.builder().id(UUID.randomUUID()).build());
+            mockTenants.put("localhost", TenantEntity.builder().id(UUID.fromString("7cccdad4-c562-402b-8dce-d64559a91500")).build());
 
             TenantEntity localTenant = mockTenants.get(subDomain);
             if (localTenant == null) {
@@ -122,9 +116,18 @@ public class TenantServiceImpl implements TenantService {
             return localTenant;
         }
 
-        return tenantRepository.findBySubDomain(subDomain)
+        return tenantRepository.findBySubDomainAndStatus(subDomain, CommonStatus.ACTIVE)
                 .orElseThrow(() -> {
                     log.warn("Tenant not found for subdomain: {}", subDomain);
+                    return new NotFoundException(Constants.Tenant.NOT_FOUND);
+                });
+    }
+
+    @Override
+    public TenantEntity findDefaultTenant() {
+        return tenantRepository.findBySubDomainAndStatus("default", CommonStatus.DEFAULT)
+                .orElseThrow(() -> {
+                    log.warn("Tenant not found for subdomain: {}", "default");
                     return new NotFoundException(Constants.Tenant.NOT_FOUND);
                 });
     }

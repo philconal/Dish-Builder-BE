@@ -4,8 +4,9 @@ import lombok.Getter;
 
 @Getter
 public enum CommonStatus {
-    ACTIVE(1),
-    INACTIVE(2);
+    DEFAULT(1),
+    ACTIVE(2),
+    INACTIVE(3);
     private final int status;
 
     CommonStatus(int status) {

@@ -1,11 +1,11 @@
 package com.conal.dishbuilder.domain;
 
 import com.conal.dishbuilder.constant.CommonStatus;
+import com.conal.dishbuilder.constant.UserType;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
 
@@ -48,7 +48,8 @@ public class UserEntity extends Auditable<UUID> implements Serializable {
 
     @Column(name = "status", nullable = false)
     private CommonStatus status = CommonStatus.ACTIVE;
-
+    @Column(name = "user_type", nullable = false)
+    private UserType userType;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id", nullable = false, insertable = false, updatable = false)
     private TenantEntity tenant;

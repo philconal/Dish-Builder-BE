@@ -1,8 +1,6 @@
 package com.conal.dishbuilder.service.impl;
 
-import com.conal.dishbuilder.constant.Actions;
-import com.conal.dishbuilder.constant.Constants;
-import com.conal.dishbuilder.constant.ErrorType;
+import com.conal.dishbuilder.constant.*;
 import com.conal.dishbuilder.context.TenantContextHolder;
 import com.conal.dishbuilder.context.UserContextHolder;
 import com.conal.dishbuilder.domain.UserEntity;
@@ -10,21 +8,16 @@ import com.conal.dishbuilder.dto.request.LoginRequest;
 import com.conal.dishbuilder.dto.request.LoginResponse;
 import com.conal.dishbuilder.dto.request.UpdatePasswordRequest;
 import com.conal.dishbuilder.dto.response.SendOTPResponse;
-import com.conal.dishbuilder.exception.AttemptExceededException;
-import com.conal.dishbuilder.exception.BadRequestException;
+import com.conal.dishbuilder.exception.*;
 import com.conal.dishbuilder.exception.IllegalAccessException;
-import com.conal.dishbuilder.exception.InternalServerException;
-import com.conal.dishbuilder.exception.NotFoundException;
 import com.conal.dishbuilder.repository.UserRepository;
 import com.conal.dishbuilder.service.AuthService;
 import com.conal.dishbuilder.service.MailService;
 import com.conal.dishbuilder.service.RateLimitService;
 import com.conal.dishbuilder.util.*;
-import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.mail.MailSender;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -33,6 +26,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static com.conal.dishbuilder.constant.Constants.OTP_LENGTH;
 import static com.conal.dishbuilder.constant.Constants.User.TOO_FAST;
@@ -54,7 +48,7 @@ public class AuthServiceImpl implements AuthService {
         UUID tenantId = TenantContextHolder.getTenantContext();
         log.info("Login attempt for username: {} in tenant: {}", request.getUsername(), tenantId);
 
-        UserEntity user = userRepository.findByUsernameAndTenantId(request.getUsername(), tenantId)
+        UserEntity user = userRepository.findByUsernameAndTenantIdAndStatus(request.getUsername(), tenantId, CommonStatus.ACTIVE)
                 .orElseThrow(() -> {
                     log.warn("Login failed - User not found for username: {}", request.getUsername());
                     return new BadRequestException("Invalid username or password");
@@ -67,10 +61,13 @@ public class AuthServiceImpl implements AuthService {
             UserDetails userDetails = (UserDetails) authenticate.getPrincipal();
 
             String accessToken = jwtUtils.generateAccessToken(userDetails);
+            String refreshToken = jwtUtils.generateRefreshToken(userDetails);
             log.info("Login successful for user: {}", user.getUsername());
 
             return LoginResponse.builder()
                     .accessToken(accessToken)
+                    .refreshToken(refreshToken)
+                    .roles(user.getRoles().stream().map(r -> r.getName()).toList())
                     .build();
         } catch (AuthenticationException e) {
             log.warn("Authentication failed for username: {}", request.getUsername());
@@ -83,7 +80,7 @@ public class AuthServiceImpl implements AuthService {
         UUID tenantId = TenantContextHolder.getTenantContext();
         log.info("Forgot password requested for username: {}", username);
 
-        UserEntity user = userRepository.findByUsernameAndTenantId(username, tenantId)
+        UserEntity user = userRepository.findByUsernameAndTenantIdAndStatus(username, tenantId, CommonStatus.ACTIVE)
                 .orElseThrow(() -> {
                     log.warn("Forgot password - User not found: {}", username);
                     return new NotFoundException("User not found");
@@ -146,9 +143,12 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public boolean logout(String refreshToken) {
-        log.info("Logout triggered. (Refresh token logic not implemented yet)");
-        return true;
+    public void logout(String refreshToken, String accessToken) {
+        if (StringUtils.isNotBlank(refreshToken) && jwtUtils.validateToken(refreshToken)
+                && StringUtils.isNotBlank(accessToken) && jwtUtils.validateToken(accessToken)) {
+            jwtUtils.addTokenIntoBlacklist(accessToken, TokenType.ACCESS);
+            jwtUtils.addTokenIntoBlacklist(refreshToken, TokenType.REFRESH);
+        }
     }
 
     @Override
@@ -165,7 +165,7 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalAccessException("OTP validation required");
         }
 
-        UserEntity user = userRepository.findByUsernameAndTenantId(username, tenantId)
+        UserEntity user = userRepository.findByUsernameAndTenantIdAndStatus(username, tenantId, CommonStatus.ACTIVE)
                 .orElseThrow(() -> {
                     log.error("User not found during password update: {}", username);
                     return new NotFoundException("User not found");
@@ -182,5 +182,47 @@ public class AuthServiceImpl implements AuthService {
             log.error("Password update failed for user: {} - {}", username, e.getMessage(), e);
             throw new InternalServerException("Failed to update password");
         }
+    }
+
+    @Override
+    public LoginResponse refreshToken(String refreshToken, String accessToken) {
+        if (StringUtils.isBlank(refreshToken) || !jwtUtils.validateToken(refreshToken)) {
+            throw new ForbiddenException("Invalid refresh token");
+        }
+
+        Boolean isBlacklisted = jwtUtils.existsTokenInBlacklist(refreshToken, TokenType.REFRESH);
+        if (Boolean.TRUE.equals(isBlacklisted)) {
+            throw new ForbiddenException("Refresh token is blacklisted");
+        }
+
+        String username = jwtUtils.getUsername(refreshToken);
+
+        UUID tenantId = TenantContextHolder.getTenantContext();
+
+        UserEntity user = userRepository.findByUsernameAndTenantIdAndStatus(username, tenantId, CommonStatus.ACTIVE)
+                .orElseThrow(() -> {
+                    log.warn("Login failed - User not found for username: {}", username);
+                    return new BadRequestException("Invalid username or password");
+                });
+
+        var token = new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword());
+
+        try {
+            Authentication authenticate = authenticationManager.authenticate(token);
+            UserDetails userDetails = (UserDetails) authenticate.getPrincipal();
+
+            String newAccessToken = jwtUtils.generateAccessToken(userDetails);
+            log.info("New access token: {}", newAccessToken);
+            jwtUtils.addTokenIntoBlacklist(accessToken, TokenType.ACCESS);
+            log.info("Retrieved access token: {}", accessToken);
+            return LoginResponse.builder()
+                    .accessToken(newAccessToken)
+                    .roles(user.getRoles().stream().map(r -> r.getName()).toList())
+                    .build();
+        } catch (AuthenticationException e) {
+            log.warn("Authentication failed for username: {}", username);
+            throw new BadRequestException("Invalid username or password");
+        }
+
     }
 }

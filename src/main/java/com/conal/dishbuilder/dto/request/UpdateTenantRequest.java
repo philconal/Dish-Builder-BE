@@ -16,15 +16,12 @@ public class UpdateTenantRequest {
     @Nonnull
     private UUID id;
 
-    @NotBlank(message = "Name is required")
     @Size(max = 100, message = "Name must not exceed 100 characters")
     private String name;
 
-    @NotBlank(message = "Phone is required")
     @Pattern(regexp = "^[0-9]{9,15}$", message = "Phone must be between 9 and 15 digits")
     private String phone;
 
-    @NotBlank(message = "Email is required")
     @Email(message = "Email format is invalid")
     @Size(max = 150, message = "Email must not exceed 150 characters")
     private String email;
@@ -35,19 +32,5 @@ public class UpdateTenantRequest {
     @Size(max = 255, message = "Logo URL must not exceed 255 characters")
     private String logoUrl;
 
-    @NotBlank
     private CommonStatus status;
-
-    @Data
-    public static class LoginRequest {
-        private String username;
-        private String password;
-    }
-
-    @Data
-    @Builder
-    public static class LoginResponse {
-        private String accessToken;
-        private String refreshToken;
-    }
 }

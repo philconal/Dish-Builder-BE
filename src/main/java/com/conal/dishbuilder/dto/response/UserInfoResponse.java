@@ -1,9 +1,10 @@
 package com.conal.dishbuilder.dto.response;
 
 import com.conal.dishbuilder.constant.CommonStatus;
+import com.conal.dishbuilder.constant.UserType;
 import lombok.*;
 
-import java.util.Set;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -11,7 +12,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class UserResponse {
+public class UserInfoResponse {
     private UUID id;
     private String username;
     private String logoUrl;
@@ -21,6 +22,7 @@ public class UserResponse {
     private String email;
     private Integer registerWith;
     private CommonStatus status;
+    private UserType userType;
     private String tenant;
+    private List<String> roles;
 }
-

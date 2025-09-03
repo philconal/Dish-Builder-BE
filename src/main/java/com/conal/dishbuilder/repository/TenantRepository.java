@@ -1,5 +1,6 @@
 package com.conal.dishbuilder.repository;
 
+import com.conal.dishbuilder.constant.CommonStatus;
 import com.conal.dishbuilder.domain.TenantEntity;
 import lombok.NonNull;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,5 +15,5 @@ public interface TenantRepository extends JpaRepository<TenantEntity, UUID>{
     boolean existsByName(@NonNull String name);
 
     boolean existsByEmail(@NonNull String email);
-    Optional<TenantEntity> findBySubDomain(@NonNull String domain);
+    Optional<TenantEntity> findBySubDomainAndStatus(@NonNull String domain, @NonNull CommonStatus status);
 }

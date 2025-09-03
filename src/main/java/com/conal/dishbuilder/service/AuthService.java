@@ -13,8 +13,9 @@ public interface AuthService {
 
     boolean validateOtp(String sessionId, String otp);
 
-    boolean logout(String refreshToken);
+    void logout(String refreshToken, String accessToken);
 
     boolean updatePassword(UpdatePasswordRequest request);
 
+    LoginResponse refreshToken(String refreshToken, String accessToken);
 }

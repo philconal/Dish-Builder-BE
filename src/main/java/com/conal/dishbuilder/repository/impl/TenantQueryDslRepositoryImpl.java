@@ -2,7 +2,7 @@ package com.conal.dishbuilder.repository.impl;
 
 import com.conal.dishbuilder.domain.QTenantEntity;
 import com.conal.dishbuilder.domain.TenantEntity;
-import com.conal.dishbuilder.dto.request.TenantFilterRequest;
+import com.conal.dishbuilder.dto.request.filter.TenantFilterRequest;
 import com.conal.dishbuilder.dto.response.PageResponse;
 import com.conal.dishbuilder.dto.response.TenantResponse;
 import com.conal.dishbuilder.exception.UnsupportedSortPropertyException;
@@ -45,7 +45,9 @@ public class TenantQueryDslRepositoryImpl implements TenantQueryDslRepository {
         if (StringUtils.isNotBlank(filter.getDomain())) {
             conditionBuilder.and(tenant.subDomain.containsIgnoreCase(filter.getDomain().trim()));
         }
-
+        if (filter.getTenantId() != null) {
+            conditionBuilder.and(tenant.id.eq(filter.getTenantId()));
+        }
         // Ignore pagination
         if (Boolean.TRUE.equals(filter.isIgnorePaging())) {
             log.info("Fetching all tenants without pagination");

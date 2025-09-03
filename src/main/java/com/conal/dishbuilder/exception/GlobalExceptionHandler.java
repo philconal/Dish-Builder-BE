@@ -24,7 +24,9 @@ public class GlobalExceptionHandler {
         log.error("Not found Exception: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(BaseResponse.error(HttpStatus.NOT_FOUND.value(), e.getMessage()));
-    } @ExceptionHandler({BadRequestException.class, BadCredentialsException.class})
+    }
+
+    @ExceptionHandler({BadRequestException.class, BadCredentialsException.class})
     public ResponseEntity<BaseResponse<Void>> handleBadRequestException(BadRequestException e) {
         log.error("Not found Exception: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -36,7 +38,9 @@ public class GlobalExceptionHandler {
         log.error("Maximum attempt Exception: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                 .body(BaseResponse.error(HttpStatus.TOO_MANY_REQUESTS.value(), e.getMessage()));
-    } @ExceptionHandler(IllegalAccessException.class)
+    }
+
+    @ExceptionHandler({IllegalAccessException.class, ForbiddenException.class})
     public ResponseEntity<BaseResponse<Void>> handleIllegalAccessException(IllegalAccessException e) {
         log.error("Invalid step: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
