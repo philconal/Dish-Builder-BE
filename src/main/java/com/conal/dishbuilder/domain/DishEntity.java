@@ -57,5 +57,6 @@ public class DishEntity extends Auditable<UUID> implements Serializable {
             joinColumns = @JoinColumn(name = "dish_id"),
             inverseJoinColumns = @JoinColumn(name = "ingredient_id")
     )
+    @Builder.Default
     private List<IngredientsEntity> ingredients = new ArrayList<>();
 }

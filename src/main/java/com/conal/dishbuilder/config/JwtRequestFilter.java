@@ -5,6 +5,7 @@ import com.conal.dishbuilder.constant.TokenType;
 import com.conal.dishbuilder.context.TenantContextHolder;
 import com.conal.dishbuilder.context.UserContextHolder;
 import com.conal.dishbuilder.domain.TenantEntity;
+import com.conal.dishbuilder.exception.NotFoundException;
 import com.conal.dishbuilder.service.TenantService;
 import com.conal.dishbuilder.util.JwtUtils;
 import jakarta.annotation.Nonnull;
@@ -19,6 +20,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
 import java.util.UUID;
 
 @Component
@@ -38,13 +41,13 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             token = header.substring(7);
             username = jwtUtils.getUsername(token);
         }
-        
+
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
                 // Set default tenant context for authentication
                 TenantEntity defaultTenant = tenantService.findDefaultTenant();
                 TenantContextHolder.setTenantContext(defaultTenant.getId());
-                
+
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                 if (jwtUtils.validateToken(token) && !jwtUtils.existsTokenInBlacklist(token, TokenType.ACCESS)) {
                     var auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
@@ -64,6 +67,13 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } catch (Exception e) {
             log.error("Error in JwtRequestFilter: {}", e.getMessage());
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.setContentType("application/json");
+            try {
+                response.getWriter().write("{\"error\":\"" + e.getMessage() + "\"}");
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
         } finally {
             TenantContextHolder.clearTenantContext();
             UserContextHolder.clearUserContext();

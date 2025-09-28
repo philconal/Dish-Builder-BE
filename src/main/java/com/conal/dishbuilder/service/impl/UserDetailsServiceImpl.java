@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,22 +41,15 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                         log.warn("User '{}' not found in any tenant", username);
                         return new UsernameNotFoundException("User '" + username + "' not found");
                     });
-            
+
             // Update tenant context to the user's actual tenant
             TenantContextHolder.setTenantContext(userEntity.getTenantId());
             log.info("Found user '{}' in tenant '{}', updated tenant context", username, userEntity.getTenantId());
         }
-
-        List<SimpleGrantedAuthority> authorities = userEntity.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority(role.getName()))
-                .toList();
-
-        log.debug("User '{}' has roles: {}", username, authorities);
-
         return User.builder()
                 .username(userEntity.getUsername())
                 .password(userEntity.getPassword())
-                .authorities(authorities)
+                .authorities(new ArrayList<>())
                 .accountExpired(false)
                 .accountLocked(false)
                 .credentialsExpired(false)

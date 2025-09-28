@@ -3,6 +3,7 @@ package com.conal.dishbuilder.service.impl;
 import com.conal.dishbuilder.constant.*;
 import com.conal.dishbuilder.context.TenantContextHolder;
 import com.conal.dishbuilder.context.UserContextHolder;
+import com.conal.dishbuilder.domain.RoleEntity;
 import com.conal.dishbuilder.domain.UserEntity;
 import com.conal.dishbuilder.dto.request.LoginRequest;
 import com.conal.dishbuilder.dto.request.LoginResponse;
@@ -67,7 +68,7 @@ public class AuthServiceImpl implements AuthService {
             return LoginResponse.builder()
                     .accessToken(accessToken)
                     .refreshToken(refreshToken)
-                    .roles(user.getRoles().stream().map(r -> r.getName()).toList())
+                    .roles(user.getRoles().stream().map(RoleEntity::getName).toList())
                     .build();
         } catch (AuthenticationException e) {
             log.warn("Authentication failed for username: {}", request.getUsername());

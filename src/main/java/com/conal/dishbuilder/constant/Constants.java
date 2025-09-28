@@ -1,6 +1,7 @@
 package com.conal.dishbuilder.constant;
 
 public class Constants {
+
     public final static class APP_VERSION {
         private final static String V1_0 = "v1.0";
     }
@@ -11,6 +12,9 @@ public class Constants {
         public final static String AUTH = APP_CONTEXT_PATH_V1_0 + "/auth";
         public static final String TENANT = APP_CONTEXT_PATH_V1_0 + "/tenant";
         public static final String USER = APP_CONTEXT_PATH_V1_0 + "/user";
+        public static final String CATEGORY = APP_CONTEXT_PATH_V1_0 + "/category";
+        public static final String INGREDIENTS = APP_CONTEXT_PATH_V1_0 + "/ingredients";
+        public static final String DISH = APP_CONTEXT_PATH_V1_0 + "/dish";
     }
 
     public static class Tenant {

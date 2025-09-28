@@ -11,6 +11,10 @@ import org.mapstruct.*;
 
 @Mapper(componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface TenantMapper {
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "status", ignore = true)
+    @Mapping(target = "customizations", ignore = true)
+    @Mapping(target = "users", ignore = true)
     TenantEntity toEntity(CreateTenantRequest request);
 
     TenantResponse toDto(TenantEntity tenant);
@@ -20,5 +24,10 @@ public interface TenantMapper {
         entity.status(CommonStatus.ACTIVE);
     }
 
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "urlSlug", ignore = true)
+    @Mapping(target = "subDomain", ignore = true)
+    @Mapping(target = "customizations", ignore = true)
+    @Mapping(target = "users", ignore = true)
     void updateFromRequest(UpdateTenantRequest request, @MappingTarget TenantEntity existingTenant);
 }

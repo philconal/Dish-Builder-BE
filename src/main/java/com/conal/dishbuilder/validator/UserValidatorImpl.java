@@ -7,6 +7,7 @@ import com.conal.dishbuilder.dto.request.UpdateUserRequest;
 import com.conal.dishbuilder.dto.response.FieldErrorResponse;
 import com.conal.dishbuilder.repository.TenantRepository;
 import com.conal.dishbuilder.repository.UserRepository;
+import com.conal.dishbuilder.util.CommonUtils;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,9 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import static com.conal.dishbuilder.util.CommonUtils.buildFieldErrorResponse;
 
 @Component
 @RequiredArgsConstructor
@@ -25,12 +29,9 @@ public class UserValidatorImpl implements UserValidator {
 
     @Override
     public List<FieldErrorResponse> validateCreateAccount(RegisterUserRequest request) {
-        List<FieldErrorResponse> fieldErrors = new ArrayList<>();
         Set<ConstraintViolation<Object>> violations = validator.validate(request);
-        if (!violations.isEmpty()) {
-            fieldErrors.addAll(violations.stream()
-                    .map(this::buildFieldErrorResponse).toList());
-        }
+        var fieldErrors = violations.stream()
+                .map(CommonUtils::buildFieldErrorResponse).collect(Collectors.toList());
         if (!tenantRepository.existsById(request.getTenantId())) {
             fieldErrors.add(buildFieldErrorResponse("tenantId", request.getTenantId().toString(), "TenantId not found."));
         }
@@ -46,29 +47,9 @@ public class UserValidatorImpl implements UserValidator {
 
     @Override
     public List<FieldErrorResponse> validateUpdateUser(UpdateUserRequest request, UserEntity existingUser) {
-        List<FieldErrorResponse> fieldErrors = new ArrayList<>();
         Set<ConstraintViolation<Object>> violations = validator.validate(request);
-        if (!violations.isEmpty()) {
-            fieldErrors.addAll(violations.stream()
-                    .map(this::buildFieldErrorResponse).toList());
-        }
-        return fieldErrors;
+        return violations.stream()
+                .map(CommonUtils::buildFieldErrorResponse).toList();
     }
 
-
-    private FieldErrorResponse buildFieldErrorResponse(ConstraintViolation<Object> request) {
-        return FieldErrorResponse.builder()
-                .setField(request.getPropertyPath().toString()) // tên field bị lỗi
-                .setRejectedValue(request.getInvalidValue() != null ? request.getInvalidValue().toString() : null) // giá trị bị reject
-                .setMessage(request.getMessage()) // message từ @NotBlank, @Email,...
-                .build();
-    }
-
-    private FieldErrorResponse buildFieldErrorResponse(String field, String rejectedValue, String message) {
-        return FieldErrorResponse.builder()
-                .setMessage(message)
-                .setRejectedValue(rejectedValue)
-                .setField(field)
-                .build();
-    }
 }

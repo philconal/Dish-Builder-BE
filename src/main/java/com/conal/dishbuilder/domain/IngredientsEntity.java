@@ -34,7 +34,7 @@ public class IngredientsEntity extends Auditable<UUID> implements Serializable {
      * Using LAZY fetch to avoid unnecessary joins.
      * The foreign key column is "category_id".
      */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(optional = false)
     @JoinColumn(
             name = "category_id",
             nullable = false,

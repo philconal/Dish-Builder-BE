@@ -47,7 +47,6 @@ public class AuthController {
                 .maxAge(Duration.ofDays(7))
                 .sameSite("Strict")
                 .build();
-
         return ResponseEntity
                 .ok().header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(BaseResponse.ok(login));

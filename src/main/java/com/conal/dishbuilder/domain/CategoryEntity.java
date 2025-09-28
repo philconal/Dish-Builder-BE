@@ -25,5 +25,6 @@ public class CategoryEntity extends Auditable<UUID> implements Serializable {
     private String description;
     private UUID tenantId;
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<IngredientsEntity> ingredients = new ArrayList<>();
 }

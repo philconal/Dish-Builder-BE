@@ -78,7 +78,7 @@ public class TenantServiceImpl implements TenantService {
             throw new MultipleFieldValidationException(errorResponses);
         }
 
-         tenantMapper.updateFromRequest(request,existingTenant);
+        tenantMapper.updateFromRequest(request, existingTenant);
 
         try {
             tenantRepository.save(existingTenant);
@@ -126,9 +126,7 @@ public class TenantServiceImpl implements TenantService {
     @Override
     public TenantEntity findDefaultTenant() {
         return tenantRepository.findBySubDomainAndStatus("default", CommonStatus.DEFAULT)
-                .orElseThrow(() -> {
-                    log.warn("Tenant not found for subdomain: {}", "default");
-                    return new NotFoundException(Constants.Tenant.NOT_FOUND);
-                });
+                .orElseThrow(() -> new NotFoundException(Constants.Tenant.NOT_FOUND));
+
     }
 }

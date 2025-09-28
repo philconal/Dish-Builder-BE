@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class JwtUtils {
-    private static final long EXPIRATION_TIME = 3 * 60 * 1000;       // 1 minute
+    private static final long EXPIRATION_TIME = 10 * 60 * 1000;       // 10 minute
     private static final long REFRESH_TIME = 7 * 24 * 60 * 60 * 1000; // 7 days
     private final RedisUtils redisUtils;
 

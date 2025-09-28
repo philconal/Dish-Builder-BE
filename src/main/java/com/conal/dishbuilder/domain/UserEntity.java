@@ -44,18 +44,20 @@ public class UserEntity extends Auditable<UUID> implements Serializable {
     private String email;
 
     @Column(name = "register_with", columnDefinition = "int default 0")
+    @Builder.Default
     private Integer registerWith = 0;
 
     @Column(name = "status", nullable = false)
+    @Builder.Default
     private CommonStatus status = CommonStatus.ACTIVE;
     @Column(name = "user_type", nullable = false)
     private UserType userType;
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne()
     @JoinColumn(name = "tenant_id", nullable = false, insertable = false, updatable = false)
     private TenantEntity tenant;
     @Column(name = "tenant_id", nullable = false)
     private UUID tenantId;
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany()
     @JoinTable(name = "user_role", schema = "dish_builder_schema", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<RoleEntity> roles;
 
