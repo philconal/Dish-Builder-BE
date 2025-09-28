@@ -1,4 +1,4 @@
-create schema dish_builder_schema;
+create schema if not exists dish_builder_schema;
 
 CREATE TABLE dish_builder_schema.category
 (
