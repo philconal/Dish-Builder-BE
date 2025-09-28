@@ -281,24 +281,44 @@
 				</configuration>
 			</plugin>
 			<!-- Flyway Maven Plugin -->
-			<plugin>
-				<groupId>org.flywaydb</groupId>
-				<artifactId>flyway-maven-plugin</artifactId>
-				<version>11.7.2</version>
-				<configuration>
-					<url>jdbc:postgresql://localhost:5432/dish_builder_db</url>
-					<user>dish-builder</user>
-					<password>Conal2411@C</password>
-					<schemas>
-						<schema>dish_builder_schema</schema>
-					</schemas>
-					<locations>
-						<location>filesystem:src/main/resources/db/migration</location>
-					</locations>
-				</configuration>
-			</plugin>
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>11.7.2</version>
+                <configuration>
+                    <url>${flyway.url}</url>
+                    <user>${flyway.user}</user>
+                    <password>${flyway.password}</password>
+                    <schemas>
+                        <schema>${flyway.schema}</schema>
+                    </schemas>
+                    <locations>
+                        <location>filesystem:src/main/resources/db/migration</location>
+                    </locations>
+                </configuration>
+            </plugin>
 
-		</plugins>
+        </plugins>
 	</build>
+    <profiles>
+        <profile>
+            <id>local</id>
+            <properties>
+                <flyway.url>jdbc:postgresql://localhost:5432/dish_builder_db</flyway.url>
+                <flyway.user>dish-builder</flyway.user>
+                <flyway.password>Conal2411@C</flyway.password>
+                <flyway.schema>config_schema</flyway.schema>
+            </properties>
+        </profile>
 
+        <profile>
+            <id>prod</id>
+            <properties>
+                <flyway.url>jdbc:postgresql://54.179.118.34:5432/dish_builder_db</flyway.url>
+                <flyway.user>dish-builder</flyway.user>
+                <flyway.password>Conal2411@C</flyway.password>
+                <flyway.schema>config_schema</flyway.schema>
+            </properties>
+        </profile>
+    </profiles>
 </project>
