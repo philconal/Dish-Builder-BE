@@ -6,6 +6,8 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 @Configuration
 public class CentralConfiguration {
@@ -27,5 +29,10 @@ public class CentralConfiguration {
 
         template.afterPropertiesSet();
         return template;
+    }
+
+    @Bean
+    public JavaMailSender javaMailSender() {
+        return new JavaMailSenderImpl();
     }
 }
