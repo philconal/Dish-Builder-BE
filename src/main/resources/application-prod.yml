@@ -2,7 +2,7 @@ spring:
   application:
     name: dish-builder-app
   config:
-    import: configserver:${CONFIG_URL}
+    import: configserver:https://dish-builder-cloud-config.onrender.com
   cloud:
     config:
       profile: ${PROFILE}
