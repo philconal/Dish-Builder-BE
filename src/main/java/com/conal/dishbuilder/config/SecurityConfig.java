@@ -61,7 +61,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173,https://dish-builder-be.onrender.com")); // React frontend
+        config.setAllowedOrigins(List.of("http://localhost:5173,https://dishbuilder.netlify.app")); // React frontend
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true); // Quan trọng khi dùng cookie
